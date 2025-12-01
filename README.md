@@ -1,4 +1,4 @@
-# n8n Chatbot Widget Template
+# n8n Chatbot Widget
 
 A fully customizable, lightweight JavaScript chat widget designed to plug directly into any HTML or WordPress site. Built to work with n8n Webhooks, this widget allows you to build a conversational UI powered by any backend logic—perfect for automations, FAQs, lead capture, support bots, and more.
 
@@ -45,7 +45,8 @@ Add the following code to your HTML page's `<head>` or before the closing `</bod
             position: 'right', // 'left' or 'right'
             backgroundColor: '#ffffff',
             fontColor: '#333333'
-        }
+        },
+        test: false // Set to true for test mode with predictable session IDs
     };
 </script>
 
@@ -93,6 +94,18 @@ style: {
     fontColor: '#333333'         // Text color
 }
 ```
+
+### Test Mode Configuration
+```javascript
+test: false  // Set to true to enable test mode with predictable session IDs
+```
+
+When `test` is set to `true`, the widget will use predictable session IDs in the format `test-session-{timestamp}` instead of random UUIDs. This is useful for:
+- **Automated testing**: Test scripts can predict and track session IDs
+- **Debugging**: Easier to identify test sessions in your logs
+- **Development**: Consistent session naming for development environments
+
+The session ID will be logged to the browser console in test mode for easy debugging.
 
 ## 🔌 n8n Webhook Integration
 

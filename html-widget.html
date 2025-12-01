@@ -1,8 +1,17 @@
-    <!-- Widget Configuration -->
+<html>
+
+<head>
+    <title>Chat Widget</title>
+</head>
+
+<body>
+    <h1>Welcome to the Chat Widget Page</h1>
+    <p>This page includes a chat widget configured to connect to a specific webhook.</p>
+
     <script>
         window.ChatWidgetConfig = {
             webhook: {
-                url: 'https://n8n.devmesh.xyz/webhook/932dc328-f1bc-470e-ae29-3cb593f439a4/chat',
+                url: 'http://localhost:5678/webhook/79ab443b-c1b2-4840-832e-46ed1a738bd4/chat',
                 route: 'general'
             },
             branding: {
@@ -12,14 +21,16 @@
                 responseTimeText: 'We typically respond right away' //Response time message
             },
             style: {
-                primaryColor: '#854fff', //Primary color
-                secondaryColor: '#6b3fd4', //Secondary color
+                primaryColor: '#2c2c60', //Primary color
+                secondaryColor: '#2c2c60', //Secondary color
                 position: 'right', //Position of the widget (left or right)
                 backgroundColor: '#ffffff', //Background color of the chat widget
                 fontColor: '#333333' //Text color for messages and interface
-            }
+            },
+            test: true // Set to true to enable test mode with predictable session IDs
         };
     </script>
-    <script src="https://cdn.jsdelivr.net/gh/juansebsol/n8n-chatbot-template@latest/chat-widget.js"></script>
-    <!-- Widget Script -->
-    
+    <script src="chat-widget.js"></script>
+</body>
+
+</html>
