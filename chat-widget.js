@@ -457,8 +457,8 @@
 
     function generateUUID() {
         const uuid = crypto.randomUUID();
-        const prefix = config.test ? 'test-' : '';
-        return `${prefix}${config.team}-${config.agent}-${uuid}`;
+        const prefix = config.test ? 'test/' : '';
+        return `${prefix}${config.team}/${config.agent}/${uuid}`;
     }
 
     function showTypingIndicator() {

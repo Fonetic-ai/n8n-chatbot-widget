@@ -72,8 +72,8 @@ agent: 'lead-qualification-agent'      // Required: Agent identifier (lowercase 
 
 **Important**: Both `team` and `agent` parameters are required and must follow these rules:
 - Only lowercase letters, numbers, and hyphens allowed (e.g., `fonetic-ai`, `lead-qualification-agent`)
-- Used to generate session IDs in the format: `{team}-{agent}-{uuid}`
-- In test mode: `test-{team}-{agent}-{uuid}`
+- Used to generate session IDs in the format: `{team}/{agent}/{uuid}`
+- In test mode: `test/{team}/{agent}/{uuid}`
 
 ### Webhook Configuration
 ```javascript
@@ -119,8 +119,8 @@ When `test` is set to `true`, the widget will prefix session IDs with `test-`. T
 - **Development**: Consistent session naming for development environments
 
 Example session IDs:
-- **Production mode**: `fonetic-ai-lead-qualification-agent-550e8400-e29b-41d4-a716-446655440000`
-- **Test mode**: `test-fonetic-ai-lead-qualification-agent-550e8400-e29b-41d4-a716-446655440000`
+- **Production mode**: `fonetic-ai/lead-qualification-agent/550e8400-e29b-41d4-a716-446655440000`
+- **Test mode**: `test/fonetic-ai/lead-qualification-agent/550e8400-e29b-41d4-a716-446655440000`
 
 The session ID will be logged to the browser console in test mode for easy debugging.
 
@@ -135,7 +135,7 @@ The widget sends POST requests to your n8n webhook with the following structure:
 [
   {
     "action": "loadPreviousSession",
-    "sessionId": "fonetic-ai-lead-qualification-agent-550e8400-e29b-41d4-a716-446655440000",
+    "sessionId": "fonetic-ai/lead-qualification-agent/550e8400-e29b-41d4-a716-446655440000",
     "route": "general",
     "metadata": {
       "userId": "",
@@ -151,7 +151,7 @@ The widget sends POST requests to your n8n webhook with the following structure:
 [
   {
     "action": "sendMessage",
-    "sessionId": "fonetic-ai-lead-qualification-agent-550e8400-e29b-41d4-a716-446655440000",
+    "sessionId": "fonetic-ai/lead-qualification-agent/550e8400-e29b-41d4-a716-446655440000",
     "route": "general",
     "chatInput": "User's message here",
     "metadata": {
