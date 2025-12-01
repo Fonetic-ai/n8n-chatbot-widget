@@ -10,6 +10,8 @@
 
     <script>
         window.ChatWidgetConfig = {
+            team: 'fonetic-ai', // Required: Your team identifier (lowercase with hyphens only)
+            agent: 'lead-qualification-agent', // Required: Your agent identifier (lowercase with hyphens only)
             webhook: {
                 url: 'http://localhost:5678/webhook/79ab443b-c1b2-4840-832e-46ed1a738bd4/chat',
                 route: 'general'
@@ -27,7 +29,7 @@
                 backgroundColor: '#ffffff', //Background color of the chat widget
                 fontColor: '#333333' //Text color for messages and interface
             },
-            test: true // Set to true to enable test mode with predictable session IDs
+            test: true // Set to true to enable test mode with session ID prefix
         };
     </script>
     <script src="chat-widget.js"></script>

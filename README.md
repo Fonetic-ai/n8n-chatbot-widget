@@ -29,6 +29,8 @@ Add the following code to your HTML page's `<head>` or before the closing `</bod
 <!-- Widget Configuration -->
 <script>
     window.ChatWidgetConfig = {
+        team: 'fonetic-ai',                      // Required: Your team identifier
+        agent: 'lead-qualification-agent',       // Required: Your agent identifier
         webhook: {
             url: 'YOUR_N8N_WEBHOOK_URL',
             route: 'your-route-name'
@@ -51,7 +53,7 @@ Add the following code to your HTML page's `<head>` or before the closing `</bod
 </script>
 
 <!-- Widget Script -->
-<script src="https://cdn.jsdelivr.net/gh/juansebsol/n8n-chatbot-template@latest/chat-widget.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/Fonetic-ai/n8n-chatbot-widget@latest/chat-widget.js"></script>
 ```
 
 ### Method 2: Self-Hosted
@@ -61,6 +63,17 @@ Add the following code to your HTML page's `<head>` or before the closing `</bod
 3. Update the script src to point to your hosted file
 
 ## ⚙️ Configuration Options
+
+### Required Parameters
+```javascript
+team: 'fonetic-ai',                    // Required: Team identifier (lowercase with hyphens only)
+agent: 'lead-qualification-agent'      // Required: Agent identifier (lowercase with hyphens only)
+```
+
+**Important**: Both `team` and `agent` parameters are required and must follow these rules:
+- Only lowercase letters, numbers, and hyphens allowed (e.g., `fonetic-ai`, `lead-qualification-agent`)
+- Used to generate session IDs in the format: `{team}-{agent}-{uuid}`
+- In test mode: `test-{team}-{agent}-{uuid}`
 
 ### Webhook Configuration
 ```javascript
@@ -97,13 +110,17 @@ style: {
 
 ### Test Mode Configuration
 ```javascript
-test: false  // Set to true to enable test mode with predictable session IDs
+test: false  // Set to true to enable test mode with session ID prefix
 ```
 
-When `test` is set to `true`, the widget will use predictable session IDs in the format `test-session-{timestamp}` instead of random UUIDs. This is useful for:
-- **Automated testing**: Test scripts can predict and track session IDs
+When `test` is set to `true`, the widget will prefix session IDs with `test-`. This is useful for:
+- **Automated testing**: Test scripts can easily identify test sessions
 - **Debugging**: Easier to identify test sessions in your logs
 - **Development**: Consistent session naming for development environments
+
+Example session IDs:
+- **Production mode**: `fonetic-ai-lead-qualification-agent-550e8400-e29b-41d4-a716-446655440000`
+- **Test mode**: `test-fonetic-ai-lead-qualification-agent-550e8400-e29b-41d4-a716-446655440000`
 
 The session ID will be logged to the browser console in test mode for easy debugging.
 
@@ -118,10 +135,12 @@ The widget sends POST requests to your n8n webhook with the following structure:
 [
   {
     "action": "loadPreviousSession",
-    "sessionId": "1234-5678-90ab-cdef",
+    "sessionId": "fonetic-ai-lead-qualification-agent-550e8400-e29b-41d4-a716-446655440000",
     "route": "general",
     "metadata": {
-      "userId": ""
+      "userId": "",
+      "team": "fonetic-ai",
+      "agent": "lead-qualification-agent"
     }
   }
 ]
@@ -132,11 +151,13 @@ The widget sends POST requests to your n8n webhook with the following structure:
 [
   {
     "action": "sendMessage",
-    "sessionId": "1234-5678-90ab-cdef",
+    "sessionId": "fonetic-ai-lead-qualification-agent-550e8400-e29b-41d4-a716-446655440000",
     "route": "general",
     "chatInput": "User's message here",
     "metadata": {
-      "userId": ""
+      "userId": "",
+      "team": "fonetic-ai",
+      "agent": "lead-qualification-agent"
     }
   }
 ]

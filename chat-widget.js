@@ -326,6 +326,8 @@
 
     // Default configuration
     const defaultConfig = {
+        team: '',
+        agent: '',
         webhook: {
             url: '',
             route: ''
@@ -353,15 +355,35 @@
     // Merge user config with defaults
     const config = window.ChatWidgetConfig ?
         {
+            team: window.ChatWidgetConfig.team || defaultConfig.team,
+            agent: window.ChatWidgetConfig.agent || defaultConfig.agent,
             webhook: { ...defaultConfig.webhook, ...window.ChatWidgetConfig.webhook },
             branding: { ...defaultConfig.branding, ...window.ChatWidgetConfig.branding },
             style: { ...defaultConfig.style, ...window.ChatWidgetConfig.style },
             test: window.ChatWidgetConfig.test !== undefined ? window.ChatWidgetConfig.test : defaultConfig.test
         } : defaultConfig;
 
+    // Validate configuration
+    function validateConfig() {
+        if (!config.team || !config.agent) {
+            throw new Error('ChatWidget: team and agent parameters are required');
+        }
+
+        const validFormat = /^[a-z0-9-]+$/;
+        if (!validFormat.test(config.team)) {
+            throw new Error('ChatWidget: team must be lowercase with hyphens only');
+        }
+        if (!validFormat.test(config.agent)) {
+            throw new Error('ChatWidget: agent must be lowercase with hyphens only');
+        }
+    }
+
     // Prevent multiple initializations
     if (window.N8NChatWidgetInitialized) return;
     window.N8NChatWidgetInitialized = true;
+
+    // Validate config after initialization check
+    validateConfig();
 
     let currentSessionId = '';
 
@@ -434,12 +456,9 @@
     const sendButton = chatContainer.querySelector('button[type="submit"]');
 
     function generateUUID() {
-        if (config.test) {
-            // In test mode, use a predictable session ID
-            const timestamp = Date.now();
-            return `test-session-${timestamp}`;
-        }
-        return crypto.randomUUID();
+        const uuid = crypto.randomUUID();
+        const prefix = config.test ? 'test-' : '';
+        return `${prefix}${config.team}-${config.agent}-${uuid}`;
     }
 
     function showTypingIndicator() {
@@ -471,7 +490,9 @@
             sessionId: currentSessionId,
             route: config.webhook.route,
             metadata: {
-                userId: ""
+                userId: "",
+                team: config.team,
+                agent: config.agent
             }
         }];
 
@@ -525,7 +546,9 @@
             route: config.webhook.route,
             chatInput: message,
             metadata: {
-                userId: ""
+                userId: "",
+                team: config.team,
+                agent: config.agent
             }
         };
 
