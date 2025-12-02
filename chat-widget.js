@@ -132,6 +132,71 @@
             margin: 0;
         }
 
+        .n8n-chat-widget .pre-chat-form {
+            width: 100%;
+            margin-bottom: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .n8n-chat-widget .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .n8n-chat-widget .form-field label {
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--chat--color-font);
+            opacity: 0.9;
+        }
+
+        .n8n-chat-widget .form-field input {
+            padding: 12px;
+            border: 1px solid rgba(133, 79, 255, 0.2);
+            border-radius: 8px;
+            background: var(--chat--color-background);
+            color: var(--chat--color-font);
+            font-family: inherit;
+            font-size: 14px;
+            transition: border-color 0.2s;
+        }
+
+        .n8n-chat-widget .form-field input:focus {
+            outline: none;
+            border-color: var(--chat--color-primary);
+        }
+
+        .n8n-chat-widget .form-field input::placeholder {
+            color: var(--chat--color-font);
+            opacity: 0.5;
+        }
+
+        .n8n-chat-widget .form-field input.invalid {
+            border-color: #ef4444;
+        }
+
+        .n8n-chat-widget .form-field .error-message {
+            font-size: 12px;
+            color: #ef4444;
+            display: none;
+        }
+
+        .n8n-chat-widget .form-field .error-message.visible {
+            display: block;
+        }
+
+        .n8n-chat-widget .new-chat-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .n8n-chat-widget .new-chat-btn:disabled:hover {
+            transform: none;
+        }
+
         .n8n-chat-widget .chat-interface {
             display: none;
             flex-direction: column;
@@ -349,7 +414,22 @@
             backgroundColor: '#ffffff',
             fontColor: '#333333'
         },
-        test: false
+        test: false,
+        preChatForm: {
+            enabled: true,
+            fields: {
+                name: {
+                    label: 'Name',
+                    placeholder: 'Enter your name',
+                    required: true
+                },
+                contact: {
+                    label: 'Email or Phone',
+                    placeholder: 'your@email.com or phone number',
+                    required: true
+                }
+            }
+        }
     };
 
     // Merge user config with defaults
@@ -360,7 +440,8 @@
             webhook: { ...defaultConfig.webhook, ...window.ChatWidgetConfig.webhook },
             branding: { ...defaultConfig.branding, ...window.ChatWidgetConfig.branding },
             style: { ...defaultConfig.style, ...window.ChatWidgetConfig.style },
-            test: window.ChatWidgetConfig.test !== undefined ? window.ChatWidgetConfig.test : defaultConfig.test
+            test: window.ChatWidgetConfig.test !== undefined ? window.ChatWidgetConfig.test : defaultConfig.test,
+            preChatForm: { ...defaultConfig.preChatForm, ...window.ChatWidgetConfig.preChatForm }
         } : defaultConfig;
 
     // Validate configuration
@@ -387,6 +468,15 @@
 
     let currentSessionId = '';
 
+    // Form data state
+    let formData = {
+        name: '',
+        contact: '',
+        contactType: '' // 'email' or 'phone'
+    };
+
+    let isFormValid = false;
+
     // Create widget container
     const widgetContainer = document.createElement('div');
     widgetContainer.className = 'n8n-chat-widget';
@@ -408,7 +498,29 @@
         </div>
         <div class="new-conversation">
             <h2 class="welcome-text">${config.branding.welcomeText}</h2>
-            <button class="new-chat-btn">
+            ${config.preChatForm.enabled ? `
+                <form class="pre-chat-form" id="preChatForm">
+                    <div class="form-field">
+                        <input
+                            type="text"
+                            id="userName"
+                            name="userName"
+                            placeholder="${config.preChatForm.fields.name.placeholder}"
+                            ${config.preChatForm.fields.name.required ? 'required' : ''}
+                        />
+                    </div>
+                    <div class="form-field">
+                        <input
+                            type="text"
+                            id="userContact"
+                            name="userContact"
+                            placeholder="${config.preChatForm.fields.contact.placeholder}"
+                            ${config.preChatForm.fields.contact.required ? 'required' : ''}
+                        />
+                    </div>
+                </form>
+            ` : ''}
+            <button class="new-chat-btn" ${config.preChatForm.enabled ? 'disabled' : ''}>
                 <svg class="message-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
                     <path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H5.2L4 17.2V4h16v12z"/>
                 </svg>
@@ -483,18 +595,85 @@
         }
     }
 
+    function detectContactType(contact) {
+        // Email regex: basic validation
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+        // Phone regex: supports various formats
+        // Matches: +1234567890, (123) 456-7890, 123-456-7890, 1234567890
+        const phoneRegex = /^[\+]?[(]?[0-9]{1,4}[)]?[-\s\.]?[(]?[0-9]{1,4}[)]?[-\s\.]?[0-9]{1,9}$/;
+
+        if (emailRegex.test(contact)) {
+            return 'email';
+        } else if (phoneRegex.test(contact)) {
+            return 'phone';
+        }
+        return '';
+    }
+
+    function validateForm() {
+        const nameInput = document.getElementById('userName');
+        const contactInput = document.getElementById('userContact');
+
+        if (!nameInput || !contactInput) {
+            return false; // Form not rendered
+        }
+
+        let isValid = true;
+
+        // Validate name
+        const name = nameInput.value.trim();
+        if (!name || name.length < 2) {
+            isValid = false;
+        }
+
+        // Validate contact
+        const contact = contactInput.value.trim();
+        const contactType = detectContactType(contact);
+
+        if (!contact || !contactType) {
+            isValid = false;
+        } else {
+            formData.contactType = contactType;
+        }
+
+        // Update form data
+        if (isValid) {
+            formData.name = name;
+            formData.contact = contact;
+        }
+
+        return isValid;
+    }
+
+    function updateButtonState() {
+        const newChatBtn = chatContainer.querySelector('.new-chat-btn');
+        if (!newChatBtn) return;
+
+        if (config.preChatForm.enabled) {
+            const isValid = validateForm();
+            newChatBtn.disabled = !isValid;
+            isFormValid = isValid;
+        }
+    }
+
     async function startNewConversation() {
         currentSessionId = generateUUID();
-        const data = [{
+        const data = {
             action: "loadPreviousSession",
             sessionId: currentSessionId,
             route: config.webhook.route,
             metadata: {
                 userId: "",
                 team: config.team,
-                agent: config.agent
+                agent: config.agent,
+                ...(config.preChatForm.enabled && formData.name ? {
+                    userName: formData.name,
+                    ...(formData.contactType === 'email' ? { userEmail: formData.contact } : {}),
+                    ...(formData.contactType === 'phone' ? { userPhone: formData.contact } : {})
+                } : {})
             }
-        }];
+        };
 
         showTypingIndicator();
 
@@ -548,7 +727,12 @@
             metadata: {
                 userId: "",
                 team: config.team,
-                agent: config.agent
+                agent: config.agent,
+                ...(config.preChatForm.enabled && formData.name ? {
+                    userName: formData.name,
+                    ...(formData.contactType === 'email' ? { userEmail: formData.contact } : {}),
+                    ...(formData.contactType === 'phone' ? { userPhone: formData.contact } : {})
+                } : {})
             }
         };
 
@@ -589,7 +773,44 @@
         }
     }
 
-    newChatBtn.addEventListener('click', startNewConversation);
+    newChatBtn.addEventListener('click', () => {
+        if (config.preChatForm.enabled) {
+            if (validateForm()) {
+                startNewConversation();
+            }
+        } else {
+            startNewConversation();
+        }
+    });
+
+    // Pre-chat form event handlers
+    if (config.preChatForm.enabled) {
+        const nameInput = chatContainer.querySelector('#userName');
+        const contactInput = chatContainer.querySelector('#userContact');
+
+        if (nameInput && contactInput) {
+            // Real-time validation on input
+            nameInput.addEventListener('input', () => {
+                updateButtonState();
+            });
+
+            contactInput.addEventListener('input', () => {
+                updateButtonState();
+            });
+
+            // Handle Enter key in form fields
+            [nameInput, contactInput].forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        if (isFormValid) {
+                            newChatBtn.click();
+                        }
+                    }
+                });
+            });
+        }
+    }
 
     sendButton.addEventListener('click', () => {
         const message = textarea.value.trim();
@@ -619,6 +840,20 @@
     closeButtons.forEach(button => {
         button.addEventListener('click', () => {
             chatContainer.classList.remove('open');
+
+            // Reset form data when widget closes
+            if (config.preChatForm.enabled) {
+                formData = { name: '', contact: '', contactType: '' };
+                isFormValid = false;
+
+                const nameInput = chatContainer.querySelector('#userName');
+                const contactInput = chatContainer.querySelector('#userContact');
+                if (nameInput) nameInput.value = '';
+                if (contactInput) contactInput.value = '';
+
+                const newChatBtn = chatContainer.querySelector('.new-chat-btn');
+                if (newChatBtn) newChatBtn.disabled = true;
+            }
         });
     });
 })();
