@@ -224,6 +224,7 @@
             word-wrap: break-word;
             font-size: 14px;
             line-height: 1.5;
+            white-space: pre-wrap;
         }
 
         .n8n-chat-widget .chat-message.user {
