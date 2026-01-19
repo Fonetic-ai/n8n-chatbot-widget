@@ -596,6 +596,78 @@
         }
     }
 
+    async function processStreamingResponse(response, botMessageDiv) {
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+        let fullContent = '';
+        let firstContentReceived = false;
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop(); // Keep incomplete line in buffer
+
+            for (const line of lines) {
+                if (!line.trim()) continue;
+                try {
+                    const event = JSON.parse(line);
+                    if (event.type === 'item' && event.content) {
+                        if (!firstContentReceived) {
+                            firstContentReceived = true;
+                            hideTypingIndicator();
+                        }
+                        fullContent += event.content;
+                        botMessageDiv.textContent = fullContent;
+                        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                    }
+                } catch (e) {
+                    // Skip invalid JSON lines
+                }
+            }
+        }
+
+        // Process any remaining content in buffer
+        if (buffer.trim()) {
+            try {
+                const event = JSON.parse(buffer);
+                if (event.type === 'item' && event.content) {
+                    fullContent += event.content;
+                    botMessageDiv.textContent = fullContent;
+                }
+            } catch (e) {
+                // Skip invalid JSON
+            }
+        }
+
+        return fullContent;
+    }
+
+    async function detectAndProcessResponse(response, botMessageDiv, fallbackMessage) {
+        // Clone response so we can peek without consuming
+        const clonedResponse = response.clone();
+        const reader = clonedResponse.body.getReader();
+        const { value } = await reader.read();
+        reader.cancel();
+
+        const firstChunk = new TextDecoder().decode(value);
+        const isStreaming = firstChunk.trimStart().startsWith('{"type":"');
+
+        if (isStreaming) {
+            const content = await processStreamingResponse(response, botMessageDiv);
+            return content || fallbackMessage;
+        } else {
+            // Regular JSON response
+            hideTypingIndicator();
+            const data = await response.json();
+            const output = Array.isArray(data) ? data[0].output : data.output;
+            return output || fallbackMessage;
+        }
+    }
+
     function detectContactType(contact) {
         // Email regex: basic validation
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -687,20 +759,18 @@
                 body: JSON.stringify(data)
             });
 
-            const responseData = await response.json();
-            hideTypingIndicator();
-
             chatContainer.querySelector('.brand-header').style.display = 'none';
             chatContainer.querySelector('.new-conversation').style.display = 'none';
             chatInterface.classList.add('active');
 
+            // Create bot message div before processing (needed for streaming updates)
             const botMessageDiv = document.createElement('div');
             botMessageDiv.className = 'chat-message bot';
-            const webhookMessage = Array.isArray(responseData) ? responseData[0].output : responseData.output;
-            botMessageDiv.textContent = webhookMessage && webhookMessage.trim()
-                ? webhookMessage
-                : `Hi! Thanks for reaching out to ${config.branding.name}. How can I help you?`;
             messagesContainer.appendChild(botMessageDiv);
+
+            const fallbackMessage = `Hi! Thanks for reaching out to ${config.branding.name}. How can I help you?`;
+            const content = await detectAndProcessResponse(response, botMessageDiv, fallbackMessage);
+            botMessageDiv.textContent = content;
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
 
             // Log session ID in test mode for debugging
@@ -754,13 +824,13 @@
                 body: JSON.stringify(messageData)
             });
 
-            const data = await response.json();
-            hideTypingIndicator();
-
+            // Create bot message div before processing (needed for streaming updates)
             const botMessageDiv = document.createElement('div');
             botMessageDiv.className = 'chat-message bot';
-            botMessageDiv.textContent = Array.isArray(data) ? data[0].output : data.output;
             messagesContainer.appendChild(botMessageDiv);
+
+            const content = await detectAndProcessResponse(response, botMessageDiv, '');
+            botMessageDiv.textContent = content;
             messagesContainer.scrollTop = messagesContainer.scrollHeight;
         } catch (error) {
             hideTypingIndicator();
